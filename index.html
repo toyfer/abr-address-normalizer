@@ -25,6 +25,7 @@
     --btn-primary-hover: #1648b8;
     --pre-bg: #f0f2f5;
     --error: #c62828;
+    --ok: #1b7a3d;
     --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
     --focus: #1a56db;
     --chip-bg: #ffffff;
@@ -50,6 +51,7 @@
     --btn-primary-hover: #2563eb;
     --pre-bg: #141820;
     --error: #f87171;
+    --ok: #4ade80;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .35);
     --focus: #60a5fa;
     --chip-bg: #222833;
@@ -76,6 +78,7 @@
       --btn-primary-hover: #2563eb;
       --pre-bg: #141820;
       --error: #f87171;
+      --ok: #4ade80;
       --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .35);
       --focus: #60a5fa;
       --chip-bg: #222833;
@@ -88,7 +91,7 @@
 
   body {
     font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, system-ui, sans-serif;
-    max-width: 760px;
+    max-width: 860px;
     margin: 0 auto;
     padding: 1.5rem 1rem 4rem;
     line-height: 1.6;
@@ -168,6 +171,39 @@
     box-shadow: var(--shadow);
   }
 
+  /* ---- タブ ---- */
+  .tabs {
+    display: flex;
+    gap: .25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.1rem;
+  }
+
+  .tabs button {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: .95rem;
+    padding: .5rem .95rem;
+    border-radius: 8px 8px 0 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+  }
+
+  .tabs button:hover { color: var(--text); background: var(--btn-hover); }
+
+  .tabs button[aria-selected="true"] {
+    color: var(--text);
+    border-bottom-color: var(--btn-primary-bg);
+    font-weight: 600;
+  }
+
+  .tabs button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+
   form {
     display: flex;
     gap: .5rem;
@@ -184,12 +220,34 @@
     color: var(--text);
   }
 
-  input[type=text]::placeholder { color: var(--muted); }
+  input[type=text]::placeholder,
+  textarea::placeholder { color: var(--muted); }
 
-  input[type=text]:focus {
+  input[type=text]:focus,
+  textarea:focus {
     outline: 2px solid var(--focus);
     outline-offset: 1px;
     border-color: var(--focus);
+  }
+
+  textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: .95rem;
+    line-height: 1.55;
+    padding: .6rem .85rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
+    resize: vertical;
+    min-height: 9rem;
+  }
+
+  .hint {
+    margin: 0 0 .5rem;
+    font-size: .82rem;
+    color: var(--muted);
   }
 
   button {
@@ -237,11 +295,33 @@
 
   .examples button:hover { background: var(--chip-hover); }
 
-  #status {
+  #status,
+  #batch-status {
     min-height: 1.2em;
     color: var(--muted);
     font-size: .9rem;
     margin: .75rem 0 .25rem;
+  }
+
+  #batch-progress-wrap {
+    display: none;
+    align-items: center;
+    gap: .75rem;
+    margin: .5rem 0 .25rem;
+  }
+
+  #batch-progress-wrap.active { display: flex; }
+
+  progress {
+    flex: 1;
+    height: 8px;
+    accent-color: var(--btn-primary-bg);
+  }
+
+  #batch-progress-label {
+    font-size: .85rem;
+    color: var(--muted);
+    white-space: nowrap;
   }
 
   table {
@@ -259,7 +339,6 @@
   }
 
   th {
-    width: 14em;
     background: var(--th-bg);
     white-space: nowrap;
     font-weight: 600;
@@ -283,6 +362,29 @@
     padding: .15rem .55rem;
     flex-shrink: 0;
   }
+
+  .batch-table { font-size: .85rem; }
+  .batch-table th, .batch-table td { word-break: break-all; white-space: normal; }
+  .batch-table .num { text-align: right; white-space: nowrap; }
+  .batch-table .err { color: var(--error); }
+  .batch-table .ok { color: var(--ok); white-space: nowrap; }
+
+  .summary {
+    margin: .9rem 0 .1rem;
+    font-size: .9rem;
+    color: var(--muted);
+  }
+
+  .summary strong { color: var(--text); }
+
+  .batch-actions {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-top: .9rem;
+  }
+
+  .batch-actions button { font-size: .85rem; padding: .45rem .9rem; }
 
   .json-label {
     margin: 1.25rem 0 .4rem;
@@ -325,7 +427,9 @@
   @media (max-width: 520px) {
     .topbar { flex-direction: column; align-items: stretch; }
     .theme-toggle { align-self: flex-end; }
-    th { width: 8.5em; font-size: .85rem; }
+    th { font-size: .8rem; }
+    .batch-table { font-size: .78rem; }
+    th, td { padding: .4rem .5rem; }
   }
 </style>
 </head>
@@ -344,20 +448,46 @@
 </div>
 
 <div class="card">
-  <form id="form">
-    <input id="address" type="text" placeholder="例: 東京都千代田区紀尾井町1-3" autocomplete="off" required />
-    <button id="submit-btn" class="primary" type="submit">正規化</button>
-  </form>
+  <div class="tabs" role="tablist" aria-label="処理モード">
+    <button type="button" role="tab" id="tab-single" aria-selected="true" aria-controls="panel-single">1件ずつ処理</button>
+    <button type="button" role="tab" id="tab-batch" aria-selected="false" aria-controls="panel-batch">一括処理</button>
+  </div>
 
-  <p class="examples">
-    例:
-    <button type="button" class="ex">東京都千代田区紀尾井町1-3</button>
-    <button type="button" class="ex">北海道札幌市西区24-2-2-3-3</button>
-    <button type="button" class="ex">東京都千代田区永田町1丁目6番1号</button>
-  </p>
+  <!-- ========== 1件ずつ処理 ========== -->
+  <section id="panel-single" role="tabpanel" aria-labelledby="tab-single">
+    <form id="form">
+      <input id="address" type="text" placeholder="例: 東京都千代田区紀尾井町1-3" autocomplete="off" required />
+      <button id="submit-btn" class="primary" type="submit">正規化</button>
+    </form>
 
-  <div id="status" aria-live="polite"></div>
-  <div id="result"></div>
+    <p class="examples">
+      例:
+      <button type="button" class="ex">東京都千代田区紀尾井町1-3</button>
+      <button type="button" class="ex">北海道札幌市西区24-2-2-3-3</button>
+      <button type="button" class="ex">東京都千代田区永田町1丁目6番1号</button>
+    </p>
+
+    <div id="status" aria-live="polite"></div>
+    <div id="result"></div>
+  </section>
+
+  <!-- ========== 一括処理 ========== -->
+  <section id="panel-batch" role="tabpanel" aria-labelledby="tab-batch" hidden>
+    <p class="hint">住所を1行に1件ずつ入力してください（最大 <span id="max-lines-label">500</span> 件）。空行は無視されます。</p>
+    <textarea id="batch-input" placeholder="東京都千代田区紀尾井町1-3&#10;北海道札幌市西区24-2-2-3-3&#10;東京都千代田区永田町1丁目6番1号"></textarea>
+
+    <div class="batch-actions" style="margin-top:.75rem">
+      <button id="batch-btn" class="primary" type="button">一括実行</button>
+      <button id="batch-clear-btn" type="button">入力をクリア</button>
+    </div>
+
+    <div id="batch-status" aria-live="polite"></div>
+    <div id="batch-progress-wrap">
+      <progress id="batch-progress" max="1" value="0"></progress>
+      <span id="batch-progress-label"></span>
+    </div>
+    <div id="batch-result"></div>
+  </section>
 </div>
 
 <footer>
@@ -368,6 +498,8 @@
 
 <script type="module">
   import { normalize } from 'https://cdn.jsdelivr.net/npm/@geolonia/normalize-japanese-addresses@3.1.3/dist/main-esm.mjs';
+
+  const MAX_BATCH_LINES = 500;
 
   // ---- テーマ ----
   const THEME_KEY = 'abr-theme';
@@ -391,7 +523,20 @@
     b.addEventListener('click', () => applyTheme(b.dataset.themeSet));
   });
 
-  // ---- 正規化 ----
+  // ---- タブ切替 ----
+  const tabButtons = document.querySelectorAll('.tabs button');
+  function selectTab(name) {
+    tabButtons.forEach(b => {
+      const on = (b.id === `tab-${name}`);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      document.getElementById(b.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+  tabButtons.forEach(b => {
+    b.addEventListener('click', () => selectTab(b.id.replace('tab-', '')));
+  });
+
+  // ---- 共通 ----
   const LEVEL_DESC = {
     0: '都道府県も判別できなかった',
     1: '都道府県名まで判別できた',
@@ -400,14 +545,15 @@
     8: '街区符号・住居符号または地番まで判別できた',
   };
 
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // ---- 1件ずつ処理 ----
   const form = document.getElementById('form');
   const input = document.getElementById('address');
   const btn = document.getElementById('submit-btn');
   const statusEl = document.getElementById('status');
   const resultEl = document.getElementById('result');
-
-  const esc = (s) => String(s).replace(/[&<>"']/g,
-    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   async function run(address) {
     if (!address) return;
@@ -466,6 +612,163 @@
       t.textContent = 'コピーに失敗';
     }
   });
+
+  // ---- 一括処理 ----
+  const MAX_LABEL = document.getElementById('max-lines-label');
+  MAX_LABEL.textContent = String(MAX_BATCH_LINES);
+
+  const batchInput = document.getElementById('batch-input');
+  const batchBtn = document.getElementById('batch-btn');
+  const batchClearBtn = document.getElementById('batch-clear-btn');
+  const batchStatus = document.getElementById('batch-status');
+  const batchResult = document.getElementById('batch-result');
+  const progressWrap = document.getElementById('batch-progress-wrap');
+  const progressBar = document.getElementById('batch-progress');
+  const progressLabel = document.getElementById('batch-progress-label');
+
+  let batchRows = []; // 直近の一括処理結果（CSV/TSV 出力用に保持）
+
+  batchClearBtn.addEventListener('click', () => {
+    batchInput.value = '';
+    batchStatus.textContent = '';
+    batchResult.innerHTML = '';
+    batchRows = [];
+    progressWrap.classList.remove('active');
+  });
+
+  batchBtn.addEventListener('click', async () => {
+    const lines = batchInput.value
+      .split(/\r\n|\r|\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (lines.length === 0) {
+      batchStatus.textContent = '';
+      batchResult.innerHTML = `<p class="error">住所を入力してください。</p>`;
+      return;
+    }
+    if (lines.length > MAX_BATCH_LINES) {
+      batchStatus.textContent = '';
+      batchResult.innerHTML = `<p class="error">1度に処理できるのは ${MAX_BATCH_LINES} 件までです（現在 ${lines.length} 件）。</p>`;
+      return;
+    }
+
+    batchBtn.disabled = true;
+    batchResult.innerHTML = '';
+    batchRows = [];
+    progressBar.max = lines.length;
+    progressBar.value = 0;
+    progressWrap.classList.add('active');
+
+    // 1件ずつ順次処理（データ取得の混雑を避けるため並列にはしない）
+    for (let i = 0; i < lines.length; i++) {
+      progressLabel.textContent = `処理中… ${i + 1}/${lines.length}`;
+      try {
+        const n = await normalize(lines[i]);
+        batchRows.push({
+          input: lines[i],
+          ok: true,
+          pref: n.pref ?? '',
+          city: n.city ?? '',
+          town: n.town ?? '',
+          addr: n.addr ?? '',
+          full: `${n.pref ?? ''}${n.city ?? ''}${n.town ?? ''}${n.addr ?? ''}`,
+          level: n.level,
+          lat: n.point?.lat ?? '',
+          lng: n.point?.lng ?? '',
+          other: n.other ?? '',
+          error: '',
+        });
+      } catch (err) {
+        batchRows.push({
+          input: lines[i], ok: false,
+          pref: '', city: '', town: '', addr: '', full: '',
+          level: '', lat: '', lng: '', other: '',
+          error: String(err?.message ?? err),
+        });
+      }
+      progressBar.value = i + 1;
+      // UI を固めないため、ときどき描画を譲る
+      if ((i + 1) % 20 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+
+    progressLabel.textContent = '完了';
+    setTimeout(() => progressWrap.classList.remove('active'), 1500);
+    batchBtn.disabled = false;
+
+    const okCount = batchRows.filter(r => r.ok).length;
+    const ngCount = batchRows.length - okCount;
+
+    const body = batchRows.map((r, i) => {
+      if (!r.ok) {
+        return `<tr><td class="num">${i + 1}</td><td>${esc(r.input)}</td>` +
+          `<td class="err" colspan="5">エラー: ${esc(r.error)}</td></tr>`;
+      }
+      return `<tr><td class="num">${i + 1}</td><td>${esc(r.input)}</td>` +
+        `<td>${esc(r.full)}</td>` +
+        `<td class="num" title="${esc(LEVEL_DESC[r.level] ?? '')}">${esc(r.level)}</td>` +
+        `<td>${esc(r.other || '—')}</td>` +
+        `<td class="ok">OK</td>` +
+        `<td class="num">${esc(r.lat ? `${r.lat}, ${r.lng}` : '—')}</td></tr>`;
+    }).join('');
+
+    batchStatus.textContent = '';
+    batchResult.innerHTML =
+      `<p class="summary">成功 <strong>${okCount}</strong> 件 / 失敗 <strong>${ngCount}</strong> 件（合計 ${batchRows.length} 件）</p>` +
+      `<table class="batch-table"><thead><tr>` +
+      `<th>#</th><th>入力住所</th><th>正規化済み住所</th><th>レベル</th><th>判別不能部分</th><th>結果</th><th>緯度・経度</th>` +
+      `</tr></thead><tbody>${body}</tbody></table>` +
+      `<div class="batch-actions">` +
+      `<button type="button" id="csv-btn">CSVダウンロード</button>` +
+      `<button type="button" id="tsv-btn">TSVをコピー</button>` +
+      `<button type="button" id="batch-json-btn">JSONをコピー</button>` +
+      `</div>`;
+
+    document.getElementById('csv-btn').addEventListener('click', downloadCsv);
+    document.getElementById('tsv-btn').addEventListener('click', copyTsv);
+    document.getElementById('batch-json-btn').addEventListener('click', copyJson);
+  });
+
+  // ---- 一括結果のエクスポート ----
+  const CSV_HEADER = ['入力住所', '都道府県', '市区町村', '町字', '街区符号・住居符号／地番',
+    '正規化済み住所', '正規化レベル', '緯度', '経度', '判別不能部分', 'エラー'];
+
+  const rowToCells = (r) => [
+    r.input, r.pref, r.city, r.town, r.addr, r.full,
+    r.level, r.lat, r.lng, r.other, r.error,
+  ];
+
+  const csvEscape = (s) => {
+    s = String(s ?? '');
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  function downloadCsv() {
+    const lines = [CSV_HEADER, ...batchRows.map(rowToCells)]
+      .map(cells => cells.map(csvEscape).join(','));
+    // BOM 付き UTF-8（Excel で開いたときの文字化け対策）
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'abr-normalized.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  async function copyTsv() {
+    const tsv = [CSV_HEADER, ...batchRows.map(rowToCells)]
+      .map(cells => cells.map(c => String(c ?? '').replace(/[\t\r\n]/g, ' ')).join('\t'))
+      .join('\r\n');
+    try {
+      await navigator.clipboard.writeText(tsv);
+    } catch { /* ignore */ }
+  }
+
+  async function copyJson() {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(batchRows, null, 2));
+    } catch { /* ignore */ }
+  }
 </script>
 </body>
 </html>
