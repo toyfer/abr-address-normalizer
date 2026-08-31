@@ -1,70 +1,364 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="system">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light dark" />
 <title>住所正規化ツール（アドレス・ベース・レジストリ）</title>
 <style>
-  :root { color-scheme: light dark; }
+  /* ---- ライト（既定） ---- */
+  :root,
+  [data-theme="light"] {
+    color-scheme: light;
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #1a1d21;
+    --muted: #5c6570;
+    --border: #d0d5dc;
+    --border-strong: #b8c0ca;
+    --th-bg: #eef1f5;
+    --input-bg: #ffffff;
+    --btn-bg: #ffffff;
+    --btn-hover: #eef1f5;
+    --btn-primary-bg: #1a56db;
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: #1648b8;
+    --pre-bg: #f0f2f5;
+    --error: #c62828;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+    --focus: #1a56db;
+    --chip-bg: #ffffff;
+    --chip-hover: #e8edf5;
+    --header-border: #e3e7ed;
+  }
+
+  /* ---- ダーク ---- */
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1218;
+    --surface: #1a1f29;
+    --text: #e8eaed;
+    --muted: #9aa3b2;
+    --border: #2e3644;
+    --border-strong: #3d4758;
+    --th-bg: #222833;
+    --input-bg: #141820;
+    --btn-bg: #222833;
+    --btn-hover: #2c3442;
+    --btn-primary-bg: #3b82f6;
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: #2563eb;
+    --pre-bg: #141820;
+    --error: #f87171;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .35);
+    --focus: #60a5fa;
+    --chip-bg: #222833;
+    --chip-hover: #2c3442;
+    --header-border: #2e3644;
+  }
+
+  /* システム設定に合わせる（OS がダークのときだけダーク変数を適用） */
+  @media (prefers-color-scheme: dark) {
+    [data-theme="system"] {
+      color-scheme: dark;
+      --bg: #0f1218;
+      --surface: #1a1f29;
+      --text: #e8eaed;
+      --muted: #9aa3b2;
+      --border: #2e3644;
+      --border-strong: #3d4758;
+      --th-bg: #222833;
+      --input-bg: #141820;
+      --btn-bg: #222833;
+      --btn-hover: #2c3442;
+      --btn-primary-bg: #3b82f6;
+      --btn-primary-text: #ffffff;
+      --btn-primary-hover: #2563eb;
+      --pre-bg: #141820;
+      --error: #f87171;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .35);
+      --focus: #60a5fa;
+      --chip-bg: #222833;
+      --chip-hover: #2c3442;
+      --header-border: #2e3644;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
   body {
-    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
-    max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem;
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, system-ui, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 4rem;
     line-height: 1.6;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
   }
-  h1 { font-size: 1.4rem; margin-bottom: .25rem; }
-  p.lead { margin-top: 0; color: #888; font-size: .9rem; }
-  form { display: flex; gap: .5rem; margin: 1.25rem 0; flex-wrap: wrap; }
+
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .25rem;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 .25rem;
+    font-weight: 700;
+    letter-spacing: .01em;
+  }
+
+  p.lead {
+    margin: 0;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+
+  /* テーマ切替 */
+  .theme-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
+  }
+
+  .theme-toggle button {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: .8rem;
+    padding: .4rem .7rem;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+
+  .theme-toggle button + button {
+    border-left: 1px solid var(--border);
+  }
+
+  .theme-toggle button:hover {
+    background: var(--btn-hover);
+    color: var(--text);
+  }
+
+  .theme-toggle button[aria-pressed="true"] {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+  }
+
+  .theme-toggle button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1.25rem;
+    box-shadow: var(--shadow);
+  }
+
+  form {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+
   input[type=text] {
-    flex: 1 1 320px; font-size: 1rem; padding: .55rem .75rem;
-    border: 1px solid #999; border-radius: 6px; background: transparent; color: inherit;
+    flex: 1 1 280px;
+    font-size: 1rem;
+    padding: .6rem .85rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
   }
+
+  input[type=text]::placeholder { color: var(--muted); }
+
+  input[type=text]:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+    border-color: var(--focus);
+  }
+
   button {
-    font-size: 1rem; padding: .55rem 1.2rem; cursor: pointer;
-    border: 1px solid #999; border-radius: 6px; background: rgba(127,127,127,.12); color: inherit;
+    font-size: 1rem;
+    padding: .6rem 1.15rem;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--btn-bg);
+    color: var(--text);
   }
-  button:hover { background: rgba(127,127,127,.25); }
-  button:disabled { opacity: .5; cursor: wait; }
-  .examples { margin: -.25rem 0 0; font-size: .85rem; color: #888; }
+
+  button:hover { background: var(--btn-hover); }
+
+  button:disabled { opacity: .55; cursor: wait; }
+
+  button.primary {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border-color: transparent;
+    font-weight: 600;
+  }
+
+  button.primary:hover { background: var(--btn-primary-hover); }
+
+  button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .examples {
+    margin: .85rem 0 0;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
   .examples button {
-    font-size: .8rem; padding: .15rem .6rem; border-radius: 999px; margin: .15rem .15rem 0 0;
+    font-size: .8rem;
+    padding: .2rem .7rem;
+    border-radius: 999px;
+    margin: .2rem .2rem 0 0;
+    background: var(--chip-bg);
+    border-color: var(--border);
   }
-  table { border-collapse: collapse; width: 100%; margin-top: .75rem; }
-  th, td { border: 1px solid #888; padding: .5rem .75rem; text-align: left; vertical-align: top; }
-  th { width: 15em; background: rgba(127,127,127,.15); white-space: nowrap; font-weight: 600; }
-  td.copy-cell { padding: .35rem .75rem; }
-  td.copy-cell button { font-size: .8rem; padding: .1rem .6rem; }
+
+  .examples button:hover { background: var(--chip-hover); }
+
+  #status {
+    min-height: 1.2em;
+    color: var(--muted);
+    font-size: .9rem;
+    margin: .75rem 0 .25rem;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: .5rem;
+    font-size: .95rem;
+  }
+
+  th, td {
+    border: 1px solid var(--border);
+    padding: .55rem .8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    width: 14em;
+    background: var(--th-bg);
+    white-space: nowrap;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  td { background: var(--surface); color: var(--text); }
+
+  td.copy-cell {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .45rem .8rem;
+  }
+
+  td.copy-cell .val { flex: 1; word-break: break-all; }
+
+  td.copy-cell button {
+    font-size: .75rem;
+    padding: .15rem .55rem;
+    flex-shrink: 0;
+  }
+
+  .json-label {
+    margin: 1.25rem 0 .4rem;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+
   pre {
-    background: rgba(127,127,127,.12); padding: 1rem; overflow: auto;
-    border-radius: 6px; font-size: .85rem; line-height: 1.45;
+    background: var(--pre-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    overflow: auto;
+    border-radius: 8px;
+    font-size: .82rem;
+    line-height: 1.45;
+    margin: 0;
   }
-  .error { color: #d64545; font-weight: bold; }
-  #status { min-height: 1.2em; color: #888; font-size: .9rem; margin: .5rem 0; }
+
+  .error {
+    color: var(--error);
+    font-weight: 600;
+    margin: .5rem 0 0;
+  }
+
   footer {
-    margin-top: 3rem; padding-top: 1rem; border-top: 1px solid rgba(127,127,127,.4);
-    font-size: .8rem; color: #888;
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--header-border);
+    font-size: .8rem;
+    color: var(--muted);
   }
-  footer a { color: inherit; }
+
+  footer a {
+    color: var(--btn-primary-bg);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  @media (max-width: 520px) {
+    .topbar { flex-direction: column; align-items: stretch; }
+    .theme-toggle { align-self: flex-end; }
+    th { width: 8.5em; font-size: .85rem; }
+  }
 </style>
 </head>
 <body>
 
-<h1>住所正規化ツール</h1>
-<p class="lead">入力した住所を「アドレス・ベース・レジストリ（ABR）」の正規表記へ変換して表示します</p>
+<div class="topbar">
+  <div>
+    <h1>住所正規化ツール</h1>
+    <p class="lead">入力した住所を「アドレス・ベース・レジストリ（ABR）」の正規表記へ変換して表示します</p>
+  </div>
+  <div class="theme-toggle" role="group" aria-label="表示テーマ">
+    <button type="button" data-theme-set="light" title="ライト">ライト</button>
+    <button type="button" data-theme-set="dark" title="ダーク">ダーク</button>
+    <button type="button" data-theme-set="system" title="OS の設定に合わせる">自動</button>
+  </div>
+</div>
 
-<form id="form">
-  <input id="address" type="text" placeholder="例: 東京都千代田区紀尾井町1-3" autocomplete="off" required />
-  <button id="submit-btn" type="submit">正規化</button>
-</form>
+<div class="card">
+  <form id="form">
+    <input id="address" type="text" placeholder="例: 東京都千代田区紀尾井町1-3" autocomplete="off" required />
+    <button id="submit-btn" class="primary" type="submit">正規化</button>
+  </form>
 
-<p class="examples">
-  例:
-  <button type="button" class="ex">東京都千代田区紀尾井町1-3</button>
-  <button type="button" class="ex">北海道札幌市西区24-2-2-3-3</button>
-  <button type="button" class="ex">東京都千代田区永田町1丁目6番1号</button>
-</p>
+  <p class="examples">
+    例:
+    <button type="button" class="ex">東京都千代田区紀尾井町1-3</button>
+    <button type="button" class="ex">北海道札幌市西区24-2-2-3-3</button>
+    <button type="button" class="ex">東京都千代田区永田町1丁目6番1号</button>
+  </p>
 
-<div id="status" aria-live="polite"></div>
-<div id="result"></div>
+  <div id="status" aria-live="polite"></div>
+  <div id="result"></div>
+</div>
 
 <footer>
   正規化エンジン: <a href="https://github.com/geolonia/normalize-japanese-addresses">@geolonia/normalize-japanese-addresses</a>（MIT License）<br>
@@ -73,9 +367,31 @@
 </footer>
 
 <script type="module">
-  // ビルド済みブラウザ向けバンドル（npm 公式パッケージの dist/main-esm.mjs）をバージョン固定で読み込む
   import { normalize } from 'https://cdn.jsdelivr.net/npm/@geolonia/normalize-japanese-addresses@3.1.3/dist/main-esm.mjs';
 
+  // ---- テーマ ----
+  const THEME_KEY = 'abr-theme';
+  const root = document.documentElement;
+  const themeButtons = document.querySelectorAll('[data-theme-set]');
+
+  function applyTheme(theme) {
+    const next = ['light', 'dark', 'system'].includes(theme) ? theme : 'system';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem(THEME_KEY, next); } catch { /* ignore */ }
+    themeButtons.forEach(b => {
+      b.setAttribute('aria-pressed', b.dataset.themeSet === next ? 'true' : 'false');
+    });
+  }
+
+  let saved = 'system';
+  try { saved = localStorage.getItem(THEME_KEY) || 'system'; } catch { /* ignore */ }
+  applyTheme(saved);
+
+  themeButtons.forEach(b => {
+    b.addEventListener('click', () => applyTheme(b.dataset.themeSet));
+  });
+
+  // ---- 正規化 ----
   const LEVEL_DESC = {
     0: '都道府県も判別できなかった',
     1: '都道府県名まで判別できた',
@@ -90,7 +406,6 @@
   const statusEl = document.getElementById('status');
   const resultEl = document.getElementById('result');
 
-  // HTML エスケープ（XSS 対策）
   const esc = (s) => String(s).replace(/[&<>"']/g,
     c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -115,10 +430,10 @@
       resultEl.innerHTML =
         `<table><tbody>` +
         rows.map(([k, v]) =>
-          `<tr><th>${esc(k)}</th><td class="copy-cell">${esc(v)} <button type="button" class="copy" data-copy="${esc(v)}">コピー</button></td></tr>`
+          `<tr><th>${esc(k)}</th><td class="copy-cell"><span class="val">${esc(v)}</span> <button type="button" class="copy" data-copy="${esc(v)}">コピー</button></td></tr>`
         ).join('') +
         `</tbody></table>` +
-        `<p style="margin-top:1.5rem"><small>生データ（JSON）</small></p>` +
+        `<p class="json-label">生データ（JSON）</p>` +
         `<pre>${esc(JSON.stringify(n, null, 2))}</pre>`;
     } catch (err) {
       resultEl.innerHTML = `<p class="error">エラー: ${esc(String(err?.message ?? err))}</p>`;
@@ -133,7 +448,6 @@
     run(input.value.trim());
   });
 
-  // 例ボタンで入力欄にセットして即実行
   document.querySelectorAll('button.ex').forEach(b => {
     b.addEventListener('click', () => {
       input.value = b.textContent;
@@ -141,7 +455,6 @@
     });
   });
 
-  // コピー
   resultEl.addEventListener('click', async (e) => {
     const t = e.target.closest('button.copy');
     if (!t) return;
