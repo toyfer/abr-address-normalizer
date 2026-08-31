@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>住所正規化ツール（アドレス・ベース・レジストリ）</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+    max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem;
+    line-height: 1.6;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: .25rem; }
+  p.lead { margin-top: 0; color: #888; font-size: .9rem; }
+  form { display: flex; gap: .5rem; margin: 1.25rem 0; flex-wrap: wrap; }
+  input[type=text] {
+    flex: 1 1 320px; font-size: 1rem; padding: .55rem .75rem;
+    border: 1px solid #999; border-radius: 6px; background: transparent; color: inherit;
+  }
+  button {
+    font-size: 1rem; padding: .55rem 1.2rem; cursor: pointer;
+    border: 1px solid #999; border-radius: 6px; background: rgba(127,127,127,.12); color: inherit;
+  }
+  button:hover { background: rgba(127,127,127,.25); }
+  button:disabled { opacity: .5; cursor: wait; }
+  .examples { margin: -.25rem 0 0; font-size: .85rem; color: #888; }
+  .examples button {
+    font-size: .8rem; padding: .15rem .6rem; border-radius: 999px; margin: .15rem .15rem 0 0;
+  }
+  table { border-collapse: collapse; width: 100%; margin-top: .75rem; }
+  th, td { border: 1px solid #888; padding: .5rem .75rem; text-align: left; vertical-align: top; }
+  th { width: 15em; background: rgba(127,127,127,.15); white-space: nowrap; font-weight: 600; }
+  td.copy-cell { padding: .35rem .75rem; }
+  td.copy-cell button { font-size: .8rem; padding: .1rem .6rem; }
+  pre {
+    background: rgba(127,127,127,.12); padding: 1rem; overflow: auto;
+    border-radius: 6px; font-size: .85rem; line-height: 1.45;
+  }
+  .error { color: #d64545; font-weight: bold; }
+  #status { min-height: 1.2em; color: #888; font-size: .9rem; margin: .5rem 0; }
+  footer {
+    margin-top: 3rem; padding-top: 1rem; border-top: 1px solid rgba(127,127,127,.4);
+    font-size: .8rem; color: #888;
+  }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+
+<h1>住所正規化ツール</h1>
+<p class="lead">入力した住所を「アドレス・ベース・レジストリ（ABR）」の正規表記へ変換して表示します</p>
+
+<form id="form">
+  <input id="address" type="text" placeholder="例: 東京都千代田区紀尾井町1-3" autocomplete="off" required />
+  <button id="submit-btn" type="submit">正規化</button>
+</form>
+
+<p class="examples">
+  例:
+  <button type="button" class="ex">東京都千代田区紀尾井町1-3</button>
+  <button type="button" class="ex">北海道札幌市西区24-2-2-3-3</button>
+  <button type="button" class="ex">東京都千代田区永田町1丁目6番1号</button>
+</p>
+
+<div id="status" aria-live="polite"></div>
+<div id="result"></div>
+
+<footer>
+  正規化エンジン: <a href="https://github.com/geolonia/normalize-japanese-addresses">@geolonia/normalize-japanese-addresses</a>（MIT License）<br>
+  データソース: デジタル庁「アドレス・ベース・レジストリ」（CC BY 4.0 相当の公開データ）<br>
+  このページは住所入力をブラウザ内で処理する静的アプリです（ビルド不要・APIキー不要）。
+</footer>
+
+<script type="module">
+  // ビルド済みブラウザ向けバンドル（npm 公式パッケージの dist/main-esm.mjs）をバージョン固定で読み込む
+  import { normalize } from 'https://cdn.jsdelivr.net/npm/@geolonia/normalize-japanese-addresses@3.1.3/dist/main-esm.mjs';
+
+  const LEVEL_DESC = {
+    0: '都道府県も判別できなかった',
+    1: '都道府県名まで判別できた',
+    2: '市区町村名まで判別できた',
+    3: '町丁目（大字・丁目）まで判別できた',
+    8: '街区符号・住居符号または地番まで判別できた',
+  };
+
+  const form = document.getElementById('form');
+  const input = document.getElementById('address');
+  const btn = document.getElementById('submit-btn');
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
+
+  // HTML エスケープ（XSS 対策）
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  async function run(address) {
+    if (!address) return;
+    btn.disabled = true;
+    statusEl.textContent = '処理中…';
+    resultEl.innerHTML = '';
+    try {
+      const n = await normalize(address);
+      const full = `${n.pref ?? ''}${n.city ?? ''}${n.town ?? ''}${n.addr ?? ''}`;
+      const rows = [
+        ['都道府県', n.pref ?? ''],
+        ['市区町村', n.city ?? ''],
+        ['町字（大字・丁目）', n.town ?? ''],
+        ['街区符号・住居符号／地番', n.addr ?? ''],
+        ['正規化済み住所（連結）', full],
+        ['正規化レベル', `${n.level}（${LEVEL_DESC[n.level] ?? ''}）`],
+        ['緯度・経度', n.point ? `${n.point.lat}, ${n.point.lng}` : '—'],
+        ['正規化できなかった部分', n.other || '（なし）'],
+      ];
+      resultEl.innerHTML =
+        `<table><tbody>` +
+        rows.map(([k, v]) =>
+          `<tr><th>${esc(k)}</th><td class="copy-cell">${esc(v)} <button type="button" class="copy" data-copy="${esc(v)}">コピー</button></td></tr>`
+        ).join('') +
+        `</tbody></table>` +
+        `<p style="margin-top:1.5rem"><small>生データ（JSON）</small></p>` +
+        `<pre>${esc(JSON.stringify(n, null, 2))}</pre>`;
+    } catch (err) {
+      resultEl.innerHTML = `<p class="error">エラー: ${esc(String(err?.message ?? err))}</p>`;
+    } finally {
+      statusEl.textContent = '';
+      btn.disabled = false;
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    run(input.value.trim());
+  });
+
+  // 例ボタンで入力欄にセットして即実行
+  document.querySelectorAll('button.ex').forEach(b => {
+    b.addEventListener('click', () => {
+      input.value = b.textContent;
+      run(b.textContent);
+    });
+  });
+
+  // コピー
+  resultEl.addEventListener('click', async (e) => {
+    const t = e.target.closest('button.copy');
+    if (!t) return;
+    try {
+      await navigator.clipboard.writeText(t.dataset.copy);
+      t.textContent = 'コピーしました';
+      setTimeout(() => { t.textContent = 'コピー'; }, 1200);
+    } catch {
+      t.textContent = 'コピーに失敗';
+    }
+  });
+</script>
+</body>
+</html>
